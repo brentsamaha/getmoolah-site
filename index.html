@@ -4,24 +4,253 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Moolah — Track Prices, Save Money</title>
+  <meta name="description" content="Moolah tracks prices on your favorite products and alerts you when they drop. Save money effortlessly.">
+  <meta property="og:title" content="Moolah — Track Prices, Save Money">
+  <meta property="og:description" content="Track prices on your favorite products and get alerted when they drop.">
+  <meta property="og:image" content="https://getmoolah.app/images/app-icon.png">
+  <meta property="og:url" content="https://getmoolah.app">
+  <link rel="icon" type="image/png" href="/images/app-icon.png">
+  <link rel="apple-touch-icon" href="/images/app-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a2e; background: #fffdf7; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-    .container { text-align: center; max-width: 420px; }
-    h1 { font-size: 36px; margin-bottom: 8px; }
-    .tagline { font-size: 18px; color: #666; margin-bottom: 32px; }
-    .links { display: flex; gap: 16px; justify-content: center; margin-top: 24px; }
-    a { color: #e86c5f; font-size: 14px; }
+
+    body {
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e2d40;
+      background: #f7f5f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Hero */
+    .hero {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px 40px;
+    }
+
+    .hero-inner {
+      text-align: center;
+      max-width: 520px;
+    }
+
+    .mascot {
+      width: 180px;
+      height: auto;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 4px 24px rgba(30, 45, 64, 0.10));
+    }
+
+    .app-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(30, 45, 64, 0.12);
+    }
+
+    h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    .tagline {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1e2d40;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: rgba(30, 45, 64, 0.55);
+      line-height: 1.6;
+      margin-bottom: 36px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Features */
+    .features {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .feature {
+      background: white;
+      border-radius: 16px;
+      padding: 20px 16px;
+      width: 140px;
+      box-shadow: 0 2px 12px rgba(30, 45, 64, 0.06);
+      text-align: center;
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .feature-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e2d40;
+    }
+
+    .feature-desc {
+      font-size: 12px;
+      color: rgba(30, 45, 64, 0.5);
+      margin-top: 4px;
+    }
+
+    /* CTA */
+    .cta-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #e8614d;
+      color: white;
+      font-family: 'Nunito', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 16px 36px;
+      border-radius: 14px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(232, 97, 77, 0.3);
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(232, 97, 77, 0.4);
+    }
+
+    .cta-button svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+
+    .coming-soon {
+      font-size: 13px;
+      color: rgba(30, 45, 64, 0.4);
+      font-weight: 600;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      border-top: 1px solid rgba(30, 45, 64, 0.06);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: rgba(30, 45, 64, 0.4);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover {
+      color: #e8614d;
+    }
+
+    .footer-contact {
+      font-size: 12px;
+      color: rgba(30, 45, 64, 0.3);
+    }
+
+    .footer-contact a {
+      color: rgba(30, 45, 64, 0.4);
+      text-decoration: none;
+    }
+
+    .footer-contact a:hover {
+      color: #e8614d;
+    }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+      .mascot { width: 140px; }
+      h1 { font-size: 34px; }
+      .tagline { font-size: 18px; }
+      .subtitle { font-size: 15px; }
+      .features { gap: 12px; }
+      .feature { width: 120px; padding: 16px 12px; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Moolah</h1>
-    <p class="tagline">Track prices. Save money.</p>
-    <div class="links">
+  <section class="hero">
+    <div class="hero-inner">
+      <img src="/images/moolisa.png" alt="Moolisa, the Moolah mascot" class="mascot">
+
+      <h1>Moolah</h1>
+      <p class="tagline">Track prices. Save money.</p>
+      <p class="subtitle">Share a product link, and Moolisa will watch the price for you. Get notified the moment it drops.</p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🔗</div>
+          <div class="feature-label">Share a link</div>
+          <div class="feature-desc">From any store</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">👀</div>
+          <div class="feature-label">We watch it</div>
+          <div class="feature-desc">Prices checked daily</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔔</div>
+          <div class="feature-label">Get alerted</div>
+          <div class="feature-desc">When prices drop</div>
+        </div>
+      </div>
+
+      <div class="cta-section">
+        <a class="cta-button" href="#">
+          <svg viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184 4 273.5c0 26.2 4.8 53.3 14.4 81.2 12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+          Download for iOS
+        </a>
+        <span class="coming-soon">Coming soon to the App Store</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-links">
       <a href="/privacy">Privacy Policy</a>
       <a href="/terms">Terms of Service</a>
     </div>
-  </div>
+    <p class="footer-contact"><a href="mailto:getmoolah.app@gmail.com">getmoolah.app@gmail.com</a></p>
+  </footer>
 </body>
 </html>
