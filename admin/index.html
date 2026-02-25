@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moolah Admin Dashboard</title>
+  <link rel="icon" type="image/png" href="/images/app-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e2d40;
+      background: #dce4ed;
+      min-height: 100vh;
+    }
+
+    /* Auth overlay */
+    #auth-overlay {
+      position: fixed; inset: 0;
+      background: #dce4ed;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .auth-box {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(30, 45, 64, 0.1);
+      max-width: 360px; width: 100%;
+    }
+    .auth-box img { width: 60px; margin-bottom: 16px; }
+    .auth-box h2 {
+      font-family: 'Pacifico', cursive;
+      font-size: 28px; font-weight: 400;
+      margin-bottom: 8px;
+    }
+    .auth-box p { font-size: 14px; color: rgba(30, 45, 64, 0.5); margin-bottom: 24px; }
+    .auth-box input {
+      width: 100%; padding: 12px 16px;
+      border: 2px solid #dce4ed; border-radius: 12px;
+      font-family: 'Nunito', sans-serif; font-size: 15px;
+      outline: none; transition: border-color 0.15s;
+    }
+    .auth-box input:focus { border-color: #e8614d; }
+    .auth-box button {
+      margin-top: 16px; width: 100%; padding: 12px;
+      background: #e8614d; color: white; border: none;
+      border-radius: 12px; font-family: 'Nunito', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(232, 97, 77, 0.3);
+    }
+    .auth-box button:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(232, 97, 77, 0.4); }
+    .auth-error { color: #e8614d; font-size: 13px; margin-top: 12px; display: none; }
+
+    /* Header */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px 32px 16px; flex-wrap: wrap; gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left img { width: 36px; height: 36px; border-radius: 8px; }
+    .header-left h1 {
+      font-family: 'Pacifico', cursive;
+      font-size: 24px; font-weight: 400;
+    }
+    .header-left span {
+      font-size: 13px; font-weight: 600;
+      color: rgba(30, 45, 64, 0.4);
+      background: rgba(30, 45, 64, 0.06);
+      padding: 4px 10px; border-radius: 8px;
+    }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-right .last-updated { font-size: 12px; color: rgba(30, 45, 64, 0.4); }
+    .refresh-btn {
+      padding: 8px 16px;
+      background: white; border: 2px solid #dce4ed;
+      border-radius: 10px; font-family: 'Nunito', sans-serif;
+      font-size: 13px; font-weight: 700; color: #1e2d40;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .refresh-btn:hover { border-color: #e8614d; color: #e8614d; }
+    .logout-btn {
+      padding: 8px 12px;
+      background: none; border: none;
+      font-family: 'Nunito', sans-serif;
+      font-size: 12px; font-weight: 600;
+      color: rgba(30, 45, 64, 0.3); cursor: pointer;
+    }
+    .logout-btn:hover { color: #e8614d; }
+
+    /* Dashboard content */
+    #dashboard { display: none; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 32px 40px; }
+
+    /* Section titles */
+    .section-title {
+      font-size: 16px; font-weight: 800; color: #1e2d40;
+      margin: 28px 0 14px; text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    /* KPI Cards */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .kpi-card {
+      background: white; border-radius: 16px;
+      padding: 20px; text-align: center;
+      box-shadow: 0 2px 12px rgba(30, 45, 64, 0.06);
+    }
+    .kpi-value {
+      font-size: 32px; font-weight: 800; color: #1e2d40;
+      display: block;
+    }
+    .kpi-label {
+      font-size: 12px; font-weight: 700; color: rgba(30, 45, 64, 0.4);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    /* Health cards */
+    .health-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .health-card {
+      background: white; border-radius: 16px;
+      padding: 20px; text-align: center;
+      box-shadow: 0 2px 12px rgba(30, 45, 64, 0.06);
+    }
+    .health-card.warning { border-left: 4px solid #f5a623; }
+    .health-card.danger { border-left: 4px solid #e8614d; }
+    .health-card.ok { border-left: 4px solid #50c878; }
+    .health-value { font-size: 28px; font-weight: 800; display: block; }
+    .health-label { font-size: 12px; font-weight: 700; color: rgba(30, 45, 64, 0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+    /* Chart containers */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .chart-card {
+      background: white; border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(30, 45, 64, 0.06);
+    }
+    .chart-card h3 {
+      font-size: 14px; font-weight: 800; color: #1e2d40;
+      margin-bottom: 16px; text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .chart-card canvas { max-height: 300px; }
+
+    /* Tables */
+    .table-card {
+      background: white; border-radius: 16px;
+      padding: 24px; overflow-x: auto;
+      box-shadow: 0 2px 12px rgba(30, 45, 64, 0.06);
+    }
+    .table-card h3 {
+      font-size: 14px; font-weight: 800; color: #1e2d40;
+      margin-bottom: 16px; text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; font-size: 11px; font-weight: 700;
+      color: rgba(30, 45, 64, 0.4); text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 8px 12px;
+      border-bottom: 2px solid #dce4ed;
+    }
+    td {
+      padding: 10px 12px; font-size: 13px; font-weight: 600;
+      border-bottom: 1px solid #f0f3f7;
+    }
+    tr:last-child td { border-bottom: none; }
+    td a { color: #e8614d; text-decoration: none; }
+    td a:hover { text-decoration: underline; }
+
+    /* Notification cards */
+    .notif-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .notif-card {
+      background: white; border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(30, 45, 64, 0.06);
+    }
+    .notif-type {
+      font-size: 12px; font-weight: 700; color: rgba(30, 45, 64, 0.4);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .notif-total { font-size: 28px; font-weight: 800; margin: 4px 0; }
+    .notif-rate { font-size: 13px; font-weight: 600; color: rgba(30, 45, 64, 0.5); }
+
+    /* Badge */
+    .badge {
+      display: inline-block; padding: 2px 8px;
+      border-radius: 6px; font-size: 11px; font-weight: 700;
+    }
+    .badge-red { background: rgba(232, 97, 77, 0.12); color: #e8614d; }
+    .badge-yellow { background: rgba(245, 166, 35, 0.12); color: #c68a1d; }
+    .badge-green { background: rgba(80, 200, 120, 0.12); color: #2d8a4e; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 32px;
+      color: rgba(30, 45, 64, 0.3); font-size: 14px; font-weight: 600;
+    }
+
+    /* Loading spinner */
+    .loading {
+      display: flex; align-items: center; justify-content: center;
+      padding: 60px; color: rgba(30, 45, 64, 0.4);
+      font-size: 15px; font-weight: 600;
+    }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 3px solid #dce4ed; border-top-color: #e8614d;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin-right: 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container { padding: 0 16px 32px; }
+      .header { padding: 16px; }
+      .chart-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Auth Overlay -->
+  <div id="auth-overlay">
+    <div class="auth-box">
+      <img src="/images/app-icon.png" alt="Moolah">
+      <h2>Moolah</h2>
+      <p>Enter your admin token to access the dashboard</p>
+      <input type="password" id="token-input" placeholder="Admin token" autocomplete="off">
+      <button id="auth-btn" onclick="authenticate()">Sign In</button>
+      <p class="auth-error" id="auth-error">Invalid token. Try again.</p>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <div class="header">
+      <div class="header-left">
+        <img src="/images/app-icon.png" alt="Moolah">
+        <h1>Moolah</h1>
+        <span>Admin</span>
+      </div>
+      <div class="header-right">
+        <span class="last-updated" id="last-updated"></span>
+        <button class="refresh-btn" onclick="loadDashboard()">Refresh</button>
+        <button class="logout-btn" onclick="logout()">Log out</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        Loading dashboard...
+      </div>
+
+      <div id="content" style="display:none;">
+
+        <!-- KPI Cards -->
+        <div class="section-title">Overview</div>
+        <div class="kpi-row" id="kpi-cards"></div>
+
+        <!-- Data Health -->
+        <div class="section-title">Data Health</div>
+        <div class="health-row" id="health-cards"></div>
+
+        <!-- Charts Row 1: Store Distribution + Scrape Timeline -->
+        <div class="section-title">Analytics</div>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <h3>Store Distribution</h3>
+            <canvas id="store-chart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Scraping Activity (Last 30 Days)</h3>
+            <canvas id="scrape-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Charts Row 2: New Items + User Engagement -->
+        <div class="chart-grid" style="margin-top: 14px;">
+          <div class="chart-card">
+            <h3>New Items Trend (Last 30 Days)</h3>
+            <canvas id="new-items-chart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>User Engagement (Last 30 Days)</h3>
+            <canvas id="engagement-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Scraper Usage -->
+        <div class="chart-grid" style="margin-top: 14px;">
+          <div class="chart-card">
+            <h3>Scraper Usage</h3>
+            <div id="scraper-usage-container">
+              <canvas id="scraper-chart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>Store Leaderboard</h3>
+            <div id="store-leaderboard"></div>
+          </div>
+        </div>
+
+        <!-- User Activity Table -->
+        <div class="section-title">Users</div>
+        <div class="table-card">
+          <h3>User Activity</h3>
+          <div id="user-table"></div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="section-title">Notifications</div>
+        <div class="notif-grid" id="notif-cards"></div>
+
+        <!-- Problem Items -->
+        <div class="section-title">Problem Items</div>
+        <div class="table-card">
+          <h3>Items Needing Attention</h3>
+          <div id="problem-table"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://rqvfdrtqcazfbuztibaf.supabase.co/functions/v1/admin-dashboard";
+    let chartInstances = {};
+
+    // --- Auth ---
+    function getToken() { return localStorage.getItem("moolah_admin_token"); }
+    function setToken(t) { localStorage.setItem("moolah_admin_token", t); }
+    function clearToken() { localStorage.removeItem("moolah_admin_token"); }
+
+    function authenticate() {
+      const input = document.getElementById("token-input");
+      const token = input.value.trim();
+      if (!token) return;
+      setToken(token);
+      document.getElementById("auth-error").style.display = "none";
+      loadDashboard();
+    }
+
+    function logout() {
+      clearToken();
+      location.reload();
+    }
+
+    document.getElementById("token-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") authenticate();
+    });
+
+    // --- Init ---
+    (function init() {
+      if (getToken()) {
+        document.getElementById("auth-overlay").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        loadDashboard();
+      }
+    })();
+
+    // --- Load Dashboard ---
+    async function loadDashboard() {
+      const token = getToken();
+      if (!token) return;
+
+      document.getElementById("loading").style.display = "flex";
+      document.getElementById("content").style.display = "none";
+
+      try {
+        const res = await fetch(`${API_URL}?token=${encodeURIComponent(token)}`);
+
+        if (res.status === 401) {
+          clearToken();
+          document.getElementById("auth-overlay").style.display = "flex";
+          document.getElementById("dashboard").style.display = "none";
+          document.getElementById("auth-error").style.display = "block";
+          return;
+        }
+
+        const data = await res.json();
+        renderAll(data);
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("content").style.display = "block";
+        document.getElementById("last-updated").textContent =
+          "Updated " + new Date().toLocaleTimeString();
+      } catch (err) {
+        console.error("Failed to load dashboard:", err);
+        document.getElementById("loading").innerHTML =
+          '<span style="color:#e8614d;">Failed to load. Check console.</span>';
+      }
+    }
+
+    // --- Render All ---
+    function renderAll(data) {
+      renderKPIs(data);
+      renderHealth(data);
+      renderStoreChart(data.storeData || []);
+      renderScrapeTimeline(data.scrapeTimeline || []);
+      renderNewItemsTrend(data.newItemsTrend || []);
+      renderEngagementTimeline(data.userEngagement || []);
+      renderScraperUsage(data.scraperUsage || []);
+      renderStoreLeaderboard(data.storeLeaderboard || []);
+      renderUserTable(data.userActivity || []);
+      renderNotifications(data.notifByType || {});
+      renderProblemItems(data.problemItems || []);
+    }
+
+    // --- KPI Cards ---
+    function renderKPIs(data) {
+      const kpis = [
+        { label: "Total Users", value: data.totalUsers },
+        { label: "Total Items", value: data.totalItems },
+        { label: "Active Trackings", value: data.activeTracked },
+        { label: "Price Checks", value: data.totalPricePoints },
+        { label: "Notifications Sent", value: data.totalNotifications },
+      ];
+      document.getElementById("kpi-cards").innerHTML = kpis.map(k => `
+        <div class="kpi-card">
+          <span class="kpi-value">${(k.value || 0).toLocaleString()}</span>
+          <span class="kpi-label">${k.label}</span>
+        </div>
+      `).join("");
+    }
+
+    // --- Health Cards ---
+    function renderHealth(data) {
+      const cards = [
+        {
+          label: "Missing Images",
+          value: data.missingImages,
+          detail: `${data.missingImages}/${data.totalItems} items`,
+          cls: data.missingImages > 10 ? "warning" : data.missingImages > 0 ? "warning" : "ok",
+        },
+        {
+          label: "Scrape Failures",
+          value: data.failedScrapes,
+          detail: `${data.chronicFailures} chronic (5+)`,
+          cls: data.failedScrapes > 5 ? "danger" : data.failedScrapes > 0 ? "warning" : "ok",
+        },
+        {
+          label: "Stores Tracked",
+          value: data.storeCount,
+          detail: "unique domains",
+          cls: "ok",
+        },
+      ];
+      document.getElementById("health-cards").innerHTML = cards.map(c => `
+        <div class="health-card ${c.cls}">
+          <span class="health-value">${c.value}</span>
+          <span class="health-label">${c.label}</span>
+          <div style="font-size:11px;color:rgba(30,45,64,0.4);margin-top:4px;">${c.detail}</div>
+        </div>
+      `).join("");
+    }
+
+    // --- Store Distribution Donut ---
+    const CHART_COLORS = [
+      "#e8614d", "#4a90d9", "#50c878", "#f5a623", "#9b59b6",
+      "#1abc9c", "#e74c3c", "#3498db", "#2ecc71", "#f39c12",
+      "#8e44ad", "#16a085", "#d35400", "#2980b9", "#27ae60",
+    ];
+
+    function renderStoreChart(storeData) {
+      if (chartInstances.store) chartInstances.store.destroy();
+      const ctx = document.getElementById("store-chart").getContext("2d");
+      chartInstances.store = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: storeData.map(s => s.name),
+          datasets: [{
+            data: storeData.map(s => s.count),
+            backgroundColor: CHART_COLORS.slice(0, storeData.length),
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "right", labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
+          },
+        },
+      });
+    }
+
+    // --- Scrape Timeline ---
+    function renderScrapeTimeline(timeline) {
+      if (chartInstances.scrape) chartInstances.scrape.destroy();
+      const ctx = document.getElementById("scrape-chart").getContext("2d");
+      chartInstances.scrape = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: timeline.map(d => formatDate(d.day)),
+          datasets: [
+            {
+              label: "Successful",
+              data: timeline.map(d => d.successful),
+              borderColor: "#50c878",
+              backgroundColor: "rgba(80,200,120,0.1)",
+              fill: true, tension: 0.3, pointRadius: 2,
+            },
+            {
+              label: "Failed",
+              data: timeline.map(d => d.failed),
+              borderColor: "#e8614d",
+              backgroundColor: "rgba(232,97,77,0.1)",
+              fill: true, tension: 0.3, pointRadius: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          interaction: { intersect: false, mode: "index" },
+          scales: {
+            x: { ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", maxTicksLimit: 10 }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)" }, grid: { color: "rgba(30,45,64,0.06)" } },
+          },
+          plugins: { legend: { labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40" } } },
+        },
+      });
+    }
+
+    // --- New Items Trend ---
+    function renderNewItemsTrend(trend) {
+      if (chartInstances.newItems) chartInstances.newItems.destroy();
+      const ctx = document.getElementById("new-items-chart").getContext("2d");
+      chartInstances.newItems = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: trend.map(d => formatDate(d.day)),
+          datasets: [{
+            label: "New Items",
+            data: trend.map(d => d.new_items),
+            backgroundColor: "#4a90d9",
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", maxTicksLimit: 10 }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", stepSize: 1 }, grid: { color: "rgba(30,45,64,0.06)" } },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+    }
+
+    // --- User Engagement ---
+    function renderEngagementTimeline(engagement) {
+      if (chartInstances.engagement) chartInstances.engagement.destroy();
+      const ctx = document.getElementById("engagement-chart").getContext("2d");
+      chartInstances.engagement = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: engagement.map(d => formatDate(d.day)),
+          datasets: [{
+            label: "New Trackings",
+            data: engagement.map(d => d.new_trackings),
+            borderColor: "#9b59b6",
+            backgroundColor: "rgba(155,89,182,0.1)",
+            fill: true, tension: 0.3, pointRadius: 3,
+          }],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", maxTicksLimit: 10 }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", stepSize: 1 }, grid: { color: "rgba(30,45,64,0.06)" } },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+    }
+
+    // --- Scraper Usage ---
+    function renderScraperUsage(usage) {
+      const container = document.getElementById("scraper-usage-container");
+      if (!usage || usage.length === 0) {
+        container.innerHTML = '<div class="empty-state">Scraper type tracking starts after backend deploy. Data will appear here as new scrapes run.</div>';
+        return;
+      }
+      // Group by scraper type, aggregate totals
+      const totals = {};
+      usage.forEach(u => {
+        totals[u.scraper] = (totals[u.scraper] || 0) + u.count;
+      });
+      const scrapers = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+
+      if (chartInstances.scraper) chartInstances.scraper.destroy();
+      container.innerHTML = '<canvas id="scraper-chart"></canvas>';
+      const ctx = document.getElementById("scraper-chart").getContext("2d");
+      chartInstances.scraper = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: scrapers.map(s => s[0]),
+          datasets: [{
+            data: scrapers.map(s => s[1]),
+            backgroundColor: CHART_COLORS.slice(0, scrapers.length),
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "right", labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
+          },
+        },
+      });
+    }
+
+    // --- Store Leaderboard ---
+    function renderStoreLeaderboard(leaderboard) {
+      const el = document.getElementById("store-leaderboard");
+      if (!leaderboard.length) {
+        el.innerHTML = '<div class="empty-state">No data yet.</div>';
+        return;
+      }
+      el.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Store</th>
+              <th>Scrapes</th>
+              <th>Success Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${leaderboard.map(s => `
+              <tr>
+                <td>${esc(s.store)}</td>
+                <td>${s.total_scrapes}</td>
+                <td>
+                  <span class="badge ${parseFloat(s.success_rate) >= 90 ? 'badge-green' : parseFloat(s.success_rate) >= 50 ? 'badge-yellow' : 'badge-red'}">
+                    ${s.success_rate}%
+                  </span>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // --- User Activity Table ---
+    function renderUserTable(users) {
+      const el = document.getElementById("user-table");
+      if (!users.length) {
+        el.innerHTML = '<div class="empty-state">No users yet.</div>';
+        return;
+      }
+      el.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Tracked</th>
+              <th>Active</th>
+              <th>Inactive</th>
+              <th>Notifications</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users.map(u => `
+              <tr>
+                <td style="font-weight:700;">${esc(u.name)}</td>
+                <td>${u.total}</td>
+                <td><span class="badge badge-green">${u.active}</span></td>
+                <td><span class="badge badge-yellow">${u.inactive}</span></td>
+                <td>${u.notifications}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // --- Notifications ---
+    function renderNotifications(byType) {
+      const el = document.getElementById("notif-cards");
+      const types = Object.entries(byType);
+      if (!types.length) {
+        el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No notifications sent yet.</div>';
+        return;
+      }
+      el.innerHTML = types.map(([type, info]) => {
+        const rate = info.total > 0 ? Math.round((info.read / info.total) * 100) : 0;
+        return `
+          <div class="notif-card">
+            <div class="notif-type">${formatAlertType(type)}</div>
+            <div class="notif-total">${info.total}</div>
+            <div class="notif-rate">${info.read} read (${rate}%)</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // --- Problem Items ---
+    function renderProblemItems(items) {
+      const el = document.getElementById("problem-table");
+      if (!items.length) {
+        el.innerHTML = '<div class="empty-state">No problem items. Everything looks good!</div>';
+        return;
+      }
+      el.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Store</th>
+              <th>Failures</th>
+              <th>Issues</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(i => {
+              const issues = [];
+              if (i.failures > 0) issues.push(`<span class="badge badge-red">${i.failures} failures</span>`);
+              if (i.missingImage) issues.push('<span class="badge badge-yellow">No image</span>');
+              if (i.missingTitle) issues.push('<span class="badge badge-yellow">No title</span>');
+              return `
+                <tr>
+                  <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(i.title)}</td>
+                  <td>${esc(i.store || "Unknown")}</td>
+                  <td>${i.failures}</td>
+                  <td>${issues.join(" ")}</td>
+                  <td>${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">View</a>` : "—"}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // --- Helpers ---
+    function formatDate(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+
+    function formatAlertType(type) {
+      const map = {
+        price_drop: "Price Drop",
+        target_reached: "Target Reached",
+        weekly_digest: "Weekly Digest",
+        digest_nudge: "Digest Nudge",
+      };
+      return map[type] || type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function esc(str) {
+      if (!str) return "";
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>
