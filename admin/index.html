@@ -315,7 +315,7 @@
           </div>
         </div>
 
-        <!-- Scraper Usage -->
+        <!-- Scraper Usage + Item Source -->
         <div class="chart-grid" style="margin-top: 14px;">
           <div class="chart-card">
             <h3>Scraper Usage</h3>
@@ -324,8 +324,24 @@
             </div>
           </div>
           <div class="chart-card">
+            <h3>Item Source</h3>
+            <div id="source-breakdown-container">
+              <canvas id="source-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Store Leaderboard + Click Trend -->
+        <div class="chart-grid" style="margin-top: 14px;">
+          <div class="chart-card">
             <h3>Store Leaderboard</h3>
             <div id="store-leaderboard"></div>
+          </div>
+          <div class="chart-card">
+            <h3>Product Link Clicks</h3>
+            <div id="click-trend-container">
+              <canvas id="click-trend-chart"></canvas>
+            </div>
           </div>
         </div>
 
@@ -429,7 +445,9 @@
       renderNewItemsTrend(data.newItemsTrend || []);
       renderEngagementTimeline(data.userEngagement || []);
       renderScraperUsage(data.scraperUsage || []);
+      renderSourceBreakdown(data.sourceBreakdown || []);
       renderStoreLeaderboard(data.storeLeaderboard || []);
+      renderClickTrend(data.clickTrend || []);
       renderUserTable(data.userActivity || []);
       renderNotifications(data.notifByType || {});
       renderProblemItems(data.problemItems || []);
@@ -443,6 +461,7 @@
         { label: "Active Trackings", value: data.activeTracked },
         { label: "Price Checks", value: data.totalPricePoints },
         { label: "Notifications Sent", value: data.totalNotifications },
+        { label: "Store Visits", value: data.totalClicks },
       ];
       document.getElementById("kpi-cards").innerHTML = kpis.map(k => `
         <div class="kpi-card">
@@ -638,6 +657,72 @@
       });
     }
 
+    // --- Source Breakdown ---
+    const SOURCE_LABELS = {
+      add_tab: "Add Tab",
+      share_extension: "Share Extension",
+      unknown: "Unknown (legacy)",
+    };
+    function renderSourceBreakdown(breakdown) {
+      const container = document.getElementById("source-breakdown-container");
+      if (!breakdown || breakdown.length === 0) {
+        container.innerHTML = '<div class="empty-state">No source data yet. New trackings will show here.</div>';
+        return;
+      }
+      if (chartInstances.source) chartInstances.source.destroy();
+      container.innerHTML = '<canvas id="source-chart"></canvas>';
+      const ctx = document.getElementById("source-chart").getContext("2d");
+      chartInstances.source = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: breakdown.map(s => SOURCE_LABELS[s.source] || s.source),
+          datasets: [{
+            data: breakdown.map(s => s.count),
+            backgroundColor: ["#9b59b6", "#1abc9c", "#bdc3c7"].slice(0, breakdown.length),
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "right", labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
+          },
+        },
+      });
+    }
+
+    // --- Click Trend ---
+    function renderClickTrend(trend) {
+      const container = document.getElementById("click-trend-container");
+      if (!trend || trend.length === 0) {
+        container.innerHTML = '<div class="empty-state">No click data yet. Clicks will appear here once users tap "View product."</div>';
+        return;
+      }
+      if (chartInstances.clickTrend) chartInstances.clickTrend.destroy();
+      container.innerHTML = '<canvas id="click-trend-chart"></canvas>';
+      const ctx = document.getElementById("click-trend-chart").getContext("2d");
+      chartInstances.clickTrend = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: trend.map(d => formatDate(d.day)),
+          datasets: [{
+            label: "Clicks",
+            data: trend.map(d => d.count),
+            backgroundColor: "#e8614d",
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", maxTicksLimit: 10 }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", stepSize: 1 }, grid: { color: "rgba(30,45,64,0.06)" } },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+    }
+
     // --- Store Leaderboard ---
     function renderStoreLeaderboard(leaderboard) {
       const el = document.getElementById("store-leaderboard");
@@ -686,6 +771,7 @@
               <th>Tracked</th>
               <th>Active</th>
               <th>Inactive</th>
+              <th>Clicks</th>
               <th>Notifications</th>
             </tr>
           </thead>
@@ -696,6 +782,7 @@
                 <td>${u.total}</td>
                 <td><span class="badge badge-green">${u.active}</span></td>
                 <td><span class="badge badge-yellow">${u.inactive}</span></td>
+                <td>${u.clicks || 0}</td>
                 <td>${u.notifications}</td>
               </tr>
             `).join("")}
