@@ -747,7 +747,9 @@
           <thead>
             <tr>
               <th>Store</th>
-              <th>Scrapes</th>
+              <th>Items</th>
+              <th>Users</th>
+              <th>Trackings</th>
               <th>Success Rate</th>
             </tr>
           </thead>
@@ -755,7 +757,9 @@
             ${leaderboard.map(s => `
               <tr>
                 <td>${esc(s.store)}</td>
-                <td>${s.total_scrapes}</td>
+                <td style="font-weight:700;">${s.unique_items}</td>
+                <td>${s.unique_users}</td>
+                <td>${s.total_trackings}</td>
                 <td>
                   <span class="badge ${parseFloat(s.success_rate) >= 90 ? 'badge-green' : parseFloat(s.success_rate) >= 50 ? 'badge-yellow' : 'badge-red'}">
                     ${s.success_rate}%
