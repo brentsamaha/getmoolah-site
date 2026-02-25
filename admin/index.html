@@ -215,6 +215,10 @@
     .badge-red { background: rgba(232, 97, 77, 0.12); color: #e8614d; }
     .badge-yellow { background: rgba(245, 166, 35, 0.12); color: #c68a1d; }
     .badge-green { background: rgba(80, 200, 120, 0.12); color: #2d8a4e; }
+    .badge-gray { background: rgba(30, 45, 64, 0.08); color: rgba(30, 45, 64, 0.45); }
+    .badge-amber { background: rgba(245, 166, 35, 0.15); color: #c68a1d; }
+    .badge-teal { background: rgba(26, 188, 156, 0.12); color: #0e8a6e; }
+    .badge-purple { background: rgba(155, 89, 182, 0.12); color: #6c3483; }
 
     /* Empty state */
     .empty-state {
@@ -352,6 +356,13 @@
           <div id="user-table"></div>
         </div>
 
+        <!-- Tester Item Audit -->
+        <div class="section-title">Tester Item Audit</div>
+        <div class="table-card">
+          <h3>Item Quality &amp; Notification Status</h3>
+          <div id="tester-audit-table"></div>
+        </div>
+
         <!-- Notifications -->
         <div class="section-title">Notifications</div>
         <div class="notif-grid" id="notif-cards"></div>
@@ -449,6 +460,7 @@
       renderStoreLeaderboard(data.storeLeaderboard || []);
       renderClickTrend(data.clickTrend || []);
       renderUserTable(data.userActivity || []);
+      renderTesterAudit(data.testerItems || []);
       renderNotifications(data.notifByType || {});
       renderProblemItems(data.problemItems || []);
     }
@@ -845,6 +857,73 @@
                 </tr>
               `;
             }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // --- Tester Item Audit ---
+    function renderTesterAudit(items) {
+      const el = document.getElementById("tester-audit-table");
+      if (!items.length) {
+        el.innerHTML = '<div class="empty-state">No tester items found.</div>';
+        return;
+      }
+
+      function priceStr(price) {
+        if (price === null || price === undefined) return '<span class="badge badge-red">No price</span>';
+        return '$' + Number(price).toFixed(2);
+      }
+
+      function sourceLabel(src) {
+        if (src === 'add_tab') return '<span class="badge badge-purple">Add Tab</span>';
+        if (src === 'share_extension') return '<span class="badge badge-teal">Share Sheet</span>';
+        return '<span class="badge badge-gray">Unknown</span>';
+      }
+
+      el.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Item</th>
+              <th>Store</th>
+              <th>Image</th>
+              <th>Price</th>
+              <th>Source</th>
+              <th>Alert Eligible</th>
+              <th>Notif Sent</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(i => {
+              const titleCell = i.url
+                ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>`
+                : esc(i.title);
+              const titleBadge = !i.hasTitle ? ' <span class="badge badge-red">No title</span>' : '';
+              const storeBadge = !i.hasStore ? ' <span class="badge badge-red">Missing</span>' : '';
+              const imageCell = i.hasImage
+                ? '<span style="color:#2d8a4e;font-weight:800;font-size:15px;">✓</span>'
+                : '<span style="color:#e8614d;font-weight:800;font-size:15px;">✗</span>';
+              const alertCell = i.notifEligible
+                ? '<span class="badge badge-amber">Yes ↓</span>'
+                : '<span style="color:rgba(30,45,64,0.3);font-size:12px;font-weight:700;">No</span>';
+              const notifCell = i.notifSent
+                ? '<span style="color:#2d8a4e;font-weight:800;font-size:15px;">✓</span>'
+                : '<span style="color:rgba(30,45,64,0.3);font-size:15px;">—</span>';
+              return `
+                <tr>
+                  <td style="font-weight:700;white-space:nowrap;">${esc(i.userName)}</td>
+                  <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${titleCell}${titleBadge}</td>
+                  <td>${esc(i.store)}${storeBadge}</td>
+                  <td style="text-align:center;">${imageCell}</td>
+                  <td style="white-space:nowrap;">${priceStr(i.latestPrice)}</td>
+                  <td>${sourceLabel(i.source)}</td>
+                  <td>${alertCell}</td>
+                  <td style="text-align:center;">${notifCell}</td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       `;
