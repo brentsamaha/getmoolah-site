@@ -294,6 +294,14 @@
         <div class="section-title">Data Health</div>
         <div class="health-row" id="health-cards"></div>
 
+        <!-- Validation Alerts -->
+        <div class="section-title">Validation Alerts</div>
+        <div class="health-row" id="validation-summary"></div>
+        <div class="table-card" style="margin-top: 14px;" id="validation-alerts-card">
+          <h3>Recent Alerts (Last 48h)</h3>
+          <div id="validation-alerts-table"></div>
+        </div>
+
         <!-- Charts Row 1: Store Distribution + Scrape Timeline -->
         <div class="section-title">Analytics</div>
         <div class="chart-grid">
@@ -451,6 +459,7 @@
     function renderAll(data) {
       renderKPIs(data);
       renderHealth(data);
+      renderValidationAlerts(data);
       renderStoreChart(data.storeData || []);
       renderScrapeTimeline(data.scrapeTimeline || []);
       renderNewItemsTrend(data.newItemsTrend || []);
@@ -512,6 +521,84 @@
           <div style="font-size:11px;color:rgba(30,45,64,0.4);margin-top:4px;">${c.detail}</div>
         </div>
       `).join("");
+    }
+
+    // --- Validation Alerts ---
+    function renderValidationAlerts(data) {
+      const summary = data.validationSummary || { blockedWrites: 0, priceSpikes: 0, titleIssues: 0 };
+      const alerts = data.validationAlerts || [];
+
+      // Summary cards
+      const cards = [
+        {
+          label: "Blocked Writes",
+          value: summary.blockedWrites,
+          cls: summary.blockedWrites > 0 ? "danger" : "ok",
+        },
+        {
+          label: "Price Spikes",
+          value: summary.priceSpikes,
+          cls: summary.priceSpikes > 5 ? "danger" : summary.priceSpikes > 0 ? "warning" : "ok",
+        },
+        {
+          label: "Title Issues",
+          value: summary.titleIssues,
+          cls: summary.titleIssues > 5 ? "warning" : summary.titleIssues > 0 ? "warning" : "ok",
+        },
+      ];
+      document.getElementById("validation-summary").innerHTML = cards.map(c => `
+        <div class="health-card ${c.cls}">
+          <span class="health-value">${c.value}</span>
+          <span class="health-label">${c.label}</span>
+        </div>
+      `).join("");
+
+      // Alerts table
+      const el = document.getElementById("validation-alerts-table");
+      if (!alerts.length) {
+        el.innerHTML = '<div class="empty-state">No validation alerts. Data will appear after scrape runs.</div>';
+        return;
+      }
+      el.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Item</th>
+              <th>Store</th>
+              <th>Raw Price</th>
+              <th>Final Price</th>
+              <th>Status</th>
+              <th>Issues</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${alerts.slice(0, 50).map(a => {
+              const time = new Date(a.scraped_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+              const rawP = a.raw_price !== null ? '$' + Number(a.raw_price).toFixed(2) : '—';
+              const finalP = a.final_price !== null ? '$' + Number(a.final_price).toFixed(2) : '—';
+              const statusBadge = a.validation_passed
+                ? '<span class="badge badge-yellow">Warning</span>'
+                : '<span class="badge badge-red">Blocked</span>';
+              const issues = [
+                ...(a.validation_errors || []).map(e => '<span class="badge badge-red">' + esc(e.substring(0, 60)) + '</span>'),
+                ...(a.validation_warnings || []).map(w => '<span class="badge badge-yellow">' + esc(w.substring(0, 60)) + '</span>'),
+              ].join(" ");
+              return `
+                <tr>
+                  <td style="white-space:nowrap;font-size:12px;">${time}</td>
+                  <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.url ? '<a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + esc(a.item_title) + '</a>' : esc(a.item_title)}</td>
+                  <td>${esc(a.store_domain || '')}</td>
+                  <td>${rawP}</td>
+                  <td>${finalP}</td>
+                  <td>${statusBadge}</td>
+                  <td style="max-width:300px;font-size:11px;">${issues}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
     }
 
     // --- Store Distribution Donut ---
@@ -751,10 +838,18 @@
               <th>Users</th>
               <th>Trackings</th>
               <th>Success Rate</th>
+              <th>Firecrawl</th>
+              <th>Avg Time</th>
+              <th>Spikes</th>
             </tr>
           </thead>
           <tbody>
-            ${leaderboard.map(s => `
+            ${leaderboard.map(s => {
+              const fcRate = s.firecrawl_rate || 0;
+              const avgMs = s.avg_duration_ms || 0;
+              const avgSec = avgMs > 0 ? (avgMs / 1000).toFixed(1) + 's' : '—';
+              const spikes = s.spike_count || 0;
+              return `
               <tr>
                 <td>${esc(s.store)}</td>
                 <td style="font-weight:700;">${s.unique_items}</td>
@@ -765,8 +860,16 @@
                     ${s.success_rate}%
                   </span>
                 </td>
+                <td>
+                  <span class="badge ${fcRate > 50 ? 'badge-yellow' : fcRate > 0 ? 'badge-gray' : 'badge-green'}">
+                    ${fcRate}%
+                  </span>
+                </td>
+                <td style="font-size:12px;color:rgba(30,45,64,0.5);">${avgSec}</td>
+                <td>${spikes > 0 ? '<span class="badge badge-red">' + spikes + '</span>' : '<span style="color:rgba(30,45,64,0.3);">0</span>'}</td>
               </tr>
-            `).join("")}
+              `;
+            }).join("")}
           </tbody>
         </table>
       `;
