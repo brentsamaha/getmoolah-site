@@ -526,7 +526,17 @@
     // --- Validation Alerts ---
     function renderValidationAlerts(data) {
       const summary = data.validationSummary || { blockedWrites: 0, priceSpikes: 0, titleIssues: 0 };
-      const alerts = data.validationAlerts || [];
+      // Only show alerts with real issues — filter out passed validations
+      // that only have informational warnings (e.g. UA fallback)
+      const INFORMATIONAL_PATTERNS = ["UA fallback"];
+      const alerts = (data.validationAlerts || []).filter(a => {
+        if (!a.validation_passed) return true; // blocked → always show
+        const warnings = a.validation_warnings || [];
+        const errors = a.validation_errors || [];
+        if (errors.length > 0) return true;
+        // Keep if any warning is NOT purely informational
+        return warnings.some(w => !INFORMATIONAL_PATTERNS.some(p => w.includes(p)));
+      });
 
       // Summary cards
       const cards = [
@@ -578,11 +588,12 @@
               const rawP = a.raw_price !== null ? '$' + Number(a.raw_price).toFixed(2) : '—';
               const finalP = a.final_price !== null ? '$' + Number(a.final_price).toFixed(2) : '—';
               const statusBadge = a.validation_passed
-                ? '<span class="badge badge-yellow">Warning</span>'
+                ? '<span class="badge badge-green">Passed</span>'
                 : '<span class="badge badge-red">Blocked</span>';
               const issues = [
                 ...(a.validation_errors || []).map(e => '<span class="badge badge-red">' + esc(e.substring(0, 60)) + '</span>'),
-                ...(a.validation_warnings || []).map(w => '<span class="badge badge-yellow">' + esc(w.substring(0, 60)) + '</span>'),
+                ...(a.validation_warnings || []).filter(w => !INFORMATIONAL_PATTERNS.some(p => w.includes(p)))
+                  .map(w => '<span class="badge badge-yellow">' + esc(w.substring(0, 60)) + '</span>'),
               ].join(" ");
               return `
                 <tr>
