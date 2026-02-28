@@ -240,12 +240,62 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Responsive */
+    /* Responsive - Tablet */
     @media (max-width: 768px) {
       .container { padding: 0 16px 32px; }
       .header { padding: 16px; }
+      .header-left h1 { font-size: 20px; }
       .chart-grid { grid-template-columns: 1fr; }
       .kpi-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+      .health-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+      .notif-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+      .table-card { padding: 16px; }
+      .chart-card { padding: 16px; }
+      .auth-box { margin: 0 16px; padding: 32px 24px; }
+    }
+
+    /* Responsive - Mobile */
+    @media (max-width: 480px) {
+      .container { padding: 0 12px 24px; }
+      .header {
+        padding: 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .header-left { justify-content: center; }
+      .header-right {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .header-left h1 { font-size: 18px; }
+      .header-left span { font-size: 11px; padding: 3px 8px; }
+      .section-title { font-size: 14px; margin: 20px 0 10px; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .kpi-card { padding: 14px 10px; }
+      .kpi-value { font-size: 24px; }
+      .kpi-label { font-size: 10px; }
+      .health-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .health-card { padding: 14px 10px; }
+      .health-value { font-size: 22px; }
+      .health-label { font-size: 10px; }
+      .chart-card { padding: 14px; }
+      .chart-card h3 { font-size: 12px; margin-bottom: 12px; }
+      .chart-card canvas { max-height: 250px; }
+      .table-card { padding: 12px; }
+      .table-card h3 { font-size: 12px; }
+      th { font-size: 10px; padding: 6px 8px; }
+      td { font-size: 12px; padding: 8px; }
+      .notif-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .notif-card { padding: 14px; }
+      .notif-type { font-size: 10px; }
+      .notif-total { font-size: 22px; }
+      .notif-rate { font-size: 12px; }
+      .auth-box { margin: 0 12px; padding: 28px 20px; }
+      .auth-box h2 { font-size: 24px; }
+      .refresh-btn { padding: 6px 12px; font-size: 12px; }
+      .logout-btn { font-size: 11px; }
     }
   </style>
 </head>
@@ -635,7 +685,7 @@
         options: {
           responsive: true,
           plugins: {
-            legend: { position: "right", labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
+            legend: { position: legendPosition(), labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
           },
         },
       });
@@ -761,7 +811,7 @@
         options: {
           responsive: true,
           plugins: {
-            legend: { position: "right", labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
+            legend: { position: legendPosition(), labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
           },
         },
       });
@@ -795,7 +845,7 @@
         options: {
           responsive: true,
           plugins: {
-            legend: { position: "right", labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
+            legend: { position: legendPosition(), labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
           },
         },
       });
@@ -1045,6 +1095,11 @@
           </tbody>
         </table>
       `;
+    }
+
+    // --- Responsive legend position for doughnut charts ---
+    function legendPosition() {
+      return window.innerWidth <= 600 ? "bottom" : "right";
     }
 
     // --- Helpers ---
