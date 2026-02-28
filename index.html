@@ -198,14 +198,36 @@
       color: #e8614d;
     }
 
-    /* Mobile */
-    @media (max-width: 480px) {
-      .mascot { width: 140px; }
-      h1 { font-size: 38px; }
+    /* Tablet */
+    @media (max-width: 600px) {
+      .hero { padding: 40px 20px 32px; }
+      .mascot { width: 160px; }
+      h1 { font-size: 42px; }
       .tagline { font-size: 18px; }
-      .subtitle { font-size: 15px; }
-      .features { gap: 12px; }
-      .feature { width: 120px; padding: 16px 12px; }
+      .subtitle { font-size: 15px; margin-bottom: 28px; }
+      .features { gap: 14px; }
+      .feature { width: 130px; padding: 18px 14px; }
+      .cta-button { font-size: 16px; padding: 14px 32px; }
+    }
+
+    /* Mobile */
+    @media (max-width: 420px) {
+      .hero { padding: 32px 16px 24px; }
+      .mascot { width: 120px; margin-bottom: 20px; }
+      .app-icon { width: 64px; height: 64px; border-radius: 14px; }
+      h1 { font-size: 36px; }
+      .tagline { font-size: 17px; }
+      .subtitle { font-size: 14px; margin-bottom: 24px; }
+      .features { gap: 10px; }
+      .feature { width: calc(33% - 10px); min-width: 95px; padding: 14px 10px; }
+      .feature-icon { font-size: 24px; }
+      .feature-label { font-size: 12px; }
+      .feature-desc { font-size: 11px; }
+      .cta-button { font-size: 15px; padding: 14px 28px; width: 100%; justify-content: center; }
+      .coming-soon { font-size: 12px; }
+      footer { padding: 24px 16px; }
+      .footer-links { gap: 16px; }
+      .footer-links a { font-size: 12px; }
     }
   </style>
 </head>
