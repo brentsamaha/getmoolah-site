@@ -145,6 +145,23 @@
     .health-value { font-size: 28px; font-weight: 800; display: block; }
     .health-label { font-size: 12px; font-weight: 700; color: rgba(30, 45, 64, 0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 
+    /* Firecrawl credit progress bar */
+    .credit-progress-wrap {
+      margin-top: 10px;
+      background: #f0f3f7;
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .credit-progress-bar {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.4s ease;
+    }
+    .credit-progress-bar.green  { background: #50c878; }
+    .credit-progress-bar.yellow { background: #f5a623; }
+    .credit-progress-bar.red    { background: #e8614d; }
+
     /* Chart containers */
     .chart-grid {
       display: grid;
@@ -188,6 +205,19 @@
     tr:last-child td { border-bottom: none; }
     td a { color: #e8614d; text-decoration: none; }
     td a:hover { text-decoration: underline; }
+
+    /* Scrollable table containers */
+    .table-scroll-wrap {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .table-scroll-wrap table thead th {
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 1;
+      box-shadow: 0 2px 0 #dce4ed;
+    }
 
     /* Notification cards */
     .notif-grid {
@@ -564,13 +594,45 @@
           cls: "ok",
         },
       ];
-      document.getElementById("health-cards").innerHTML = cards.map(c => `
+
+      let html = cards.map(c => `
         <div class="health-card ${c.cls}">
           <span class="health-value">${c.value}</span>
           <span class="health-label">${c.label}</span>
           <div style="font-size:11px;color:rgba(30,45,64,0.4);margin-top:4px;">${c.detail}</div>
         </div>
       `).join("");
+
+      // Firecrawl credit usage card
+      const fc = data.firecrawlCredits;
+      if (fc) {
+        const colorCls = fc.usedPct > 80 ? "danger" : fc.usedPct > 50 ? "warning" : "ok";
+        const barColor = fc.usedPct > 80 ? "red" : fc.usedPct > 50 ? "yellow" : "green";
+        const resetStr = new Date(fc.resetDate).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        html += `
+          <div class="health-card ${colorCls}">
+            <span class="health-value">${fc.usedPct}%</span>
+            <span class="health-label">Firecrawl Credits</span>
+            <div style="font-size:11px;color:rgba(30,45,64,0.4);margin-top:4px;">
+              ${fc.used.toLocaleString()} / ${fc.total.toLocaleString()} used
+            </div>
+            <div class="credit-progress-wrap">
+              <div class="credit-progress-bar ${barColor}" style="width:${fc.usedPct}%"></div>
+            </div>
+            <div style="font-size:10px;color:rgba(30,45,64,0.35);margin-top:4px;">Resets ${resetStr}</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="health-card" style="border-left:4px solid #dce4ed;">
+            <span class="health-value" style="font-size:16px;color:rgba(30,45,64,0.3);">—</span>
+            <span class="health-label">Firecrawl Credits</span>
+            <div style="font-size:11px;color:rgba(30,45,64,0.3);margin-top:4px;">Unavailable</div>
+          </div>
+        `;
+      }
+
+      document.getElementById("health-cards").innerHTML = html;
     }
 
     // --- Validation Alerts ---
@@ -620,6 +682,7 @@
         return;
       }
       el.innerHTML = `
+        <div class="table-scroll-wrap">
         <table>
           <thead>
             <tr>
@@ -659,6 +722,7 @@
             }).join("")}
           </tbody>
         </table>
+        </div>
       `;
     }
 
@@ -999,6 +1063,7 @@
         return;
       }
       el.innerHTML = `
+        <div class="table-scroll-wrap">
         <table>
           <thead>
             <tr>
@@ -1027,6 +1092,7 @@
             }).join("")}
           </tbody>
         </table>
+        </div>
       `;
     }
 
@@ -1050,6 +1116,7 @@
       }
 
       el.innerHTML = `
+        <div class="table-scroll-wrap">
         <table>
           <thead>
             <tr>
@@ -1094,6 +1161,7 @@
             }).join('')}
           </tbody>
         </table>
+        </div>
       `;
     }
 
