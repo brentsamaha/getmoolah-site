@@ -387,7 +387,7 @@
         <div class="chart-grid">
           <div class="chart-card">
             <h3>Store Distribution</h3>
-            <canvas id="store-chart"></canvas>
+            <canvas id="store-chart" style="max-height:500px;"></canvas>
           </div>
           <div class="chart-card">
             <h3>Scraping Activity (Last 30 Days)</h3>
@@ -547,7 +547,7 @@
       renderScraperUsage(data.scraperUsage || []);
       renderSourceBreakdown(data.sourceBreakdown || []);
       renderStoreLeaderboard(data.storeLeaderboard || []);
-      renderClickTrend(data.clickTrend || []);
+      renderClickTrend(data.clickTrend || [], data.clickTrendByStore || [], data.clickStores || []);
       renderUserTable(data.userActivity || []);
       renderTesterAudit(data.testerItems || []);
       renderNotifications(data.notifByType || {});
@@ -735,21 +735,35 @@
 
     function renderStoreChart(storeData) {
       if (chartInstances.store) chartInstances.store.destroy();
+      // Show top 15 stores, group remainder into "Other"
+      const TOP_N = 15;
+      let chartData = storeData;
+      if (storeData.length > TOP_N) {
+        const top = storeData.slice(0, TOP_N);
+        const otherCount = storeData.slice(TOP_N).reduce((sum, s) => sum + s.count, 0);
+        chartData = [...top, { name: `Other (${storeData.length - TOP_N} stores)`, count: otherCount }];
+      }
       const ctx = document.getElementById("store-chart").getContext("2d");
       chartInstances.store = new Chart(ctx, {
-        type: "doughnut",
+        type: "bar",
         data: {
-          labels: storeData.map(s => s.name),
+          labels: chartData.map(s => s.name),
           datasets: [{
-            data: storeData.map(s => s.count),
-            backgroundColor: CHART_COLORS.slice(0, storeData.length),
+            data: chartData.map(s => s.count),
+            backgroundColor: CHART_COLORS.slice(0, chartData.length),
             borderWidth: 0,
+            borderRadius: 4,
           }],
         },
         options: {
+          indexAxis: "y",
           responsive: true,
           plugins: {
-            legend: { position: legendPosition(), labels: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40", padding: 8 } },
+            legend: { display: false },
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", stepSize: 1 }, grid: { color: "rgba(30,45,64,0.06)" } },
+            y: { ticks: { font: { family: "Nunito", size: 11, weight: "600" }, color: "#1e2d40" }, grid: { display: false } },
           },
         },
       });
@@ -915,36 +929,63 @@
       });
     }
 
-    // --- Click Trend ---
-    function renderClickTrend(trend) {
+    // --- Click Trend (Stacked by Store) ---
+    function renderClickTrend(trend, trendByStore, storeList) {
       const container = document.getElementById("click-trend-container");
-      if (!trend || trend.length === 0) {
+      const hasByStore = trendByStore && trendByStore.length > 0 && storeList && storeList.length > 0;
+
+      if ((!trend || trend.length === 0) && !hasByStore) {
         container.innerHTML = '<div class="empty-state">No click data yet. Clicks will appear here once users tap "View product."</div>';
         return;
       }
       if (chartInstances.clickTrend) chartInstances.clickTrend.destroy();
       container.innerHTML = '<canvas id="click-trend-chart"></canvas>';
       const ctx = document.getElementById("click-trend-chart").getContext("2d");
-      chartInstances.clickTrend = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: trend.map(d => formatDate(d.day)),
-          datasets: [{
-            label: "Clicks",
-            data: trend.map(d => d.count),
-            backgroundColor: "#e8614d",
-            borderRadius: 6,
-          }],
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", maxTicksLimit: 10 }, grid: { display: false } },
-            y: { beginAtZero: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", stepSize: 1 }, grid: { color: "rgba(30,45,64,0.06)" } },
+
+      if (hasByStore) {
+        // Stacked bar chart by store
+        const days = trendByStore.map(d => formatDate(d.day));
+        const datasets = storeList.map((store, i) => ({
+          label: store,
+          data: trendByStore.map(d => d.stores[store] || 0),
+          backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+          borderRadius: 3,
+        }));
+        chartInstances.clickTrend = new Chart(ctx, {
+          type: "bar",
+          data: { labels: days, datasets },
+          options: {
+            responsive: true,
+            scales: {
+              x: { stacked: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", maxTicksLimit: 10 }, grid: { display: false } },
+              y: { stacked: true, beginAtZero: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", stepSize: 1 }, grid: { color: "rgba(30,45,64,0.06)" } },
+            },
+            plugins: { legend: { position: "bottom", labels: { font: { family: "Nunito", size: 10, weight: "600" }, color: "#1e2d40", padding: 6, boxWidth: 12 } } },
           },
-          plugins: { legend: { display: false } },
-        },
-      });
+        });
+      } else {
+        // Fallback: simple bar chart
+        chartInstances.clickTrend = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: trend.map(d => formatDate(d.day)),
+            datasets: [{
+              label: "Clicks",
+              data: trend.map(d => d.count),
+              backgroundColor: "#e8614d",
+              borderRadius: 6,
+            }],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: { ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", maxTicksLimit: 10 }, grid: { display: false } },
+              y: { beginAtZero: true, ticks: { font: { family: "Nunito", size: 10 }, color: "rgba(30,45,64,0.4)", stepSize: 1 }, grid: { color: "rgba(30,45,64,0.06)" } },
+            },
+            plugins: { legend: { display: false } },
+          },
+        });
+      }
     }
 
     // --- Store Leaderboard ---
@@ -955,13 +996,14 @@
         return;
       }
       el.innerHTML = `
+        <div class="table-scroll-wrap" style="max-height:350px;">
         <table>
           <thead>
             <tr>
               <th>Store</th>
-              <th>Items</th>
+              <th>Active Trackings</th>
+              <th>Unique Items</th>
               <th>Users</th>
-              <th>Trackings</th>
               <th>Success Rate</th>
               <th>Firecrawl</th>
               <th>Avg Time</th>
@@ -974,12 +1016,13 @@
               const avgMs = s.avg_duration_ms || 0;
               const avgSec = avgMs > 0 ? (avgMs / 1000).toFixed(1) + 's' : '—';
               const spikes = s.spike_count || 0;
+              const activeTrackings = s.active_trackings || 0;
               return `
               <tr>
                 <td>${esc(s.store)}</td>
-                <td style="font-weight:700;">${s.unique_items}</td>
+                <td style="font-weight:700;">${activeTrackings}</td>
+                <td>${s.unique_items}</td>
                 <td>${s.unique_users}</td>
-                <td>${s.total_trackings}</td>
                 <td>
                   <span class="badge ${parseFloat(s.success_rate) >= 90 ? 'badge-green' : parseFloat(s.success_rate) >= 50 ? 'badge-yellow' : 'badge-red'}">
                     ${s.success_rate}%
@@ -997,6 +1040,7 @@
             }).join("")}
           </tbody>
         </table>
+        </div>
       `;
     }
 
@@ -1008,6 +1052,7 @@
         return;
       }
       el.innerHTML = `
+        <div class="table-scroll-wrap" style="max-height:400px;">
         <table>
           <thead>
             <tr>
@@ -1017,10 +1062,19 @@
               <th>Inactive</th>
               <th>Clicks</th>
               <th>Notifications</th>
+              <th>7d</th>
+              <th>30d</th>
             </tr>
           </thead>
           <tbody>
-            ${users.map(u => `
+            ${users.map(u => {
+              const week = u.interactedLastWeek
+                ? '<span style="color:#2d8a4e;font-weight:800;font-size:15px;">&#10003;</span>'
+                : '<span style="color:rgba(30,45,64,0.3);font-size:15px;">&mdash;</span>';
+              const month = u.interactedLastMonth
+                ? '<span style="color:#2d8a4e;font-weight:800;font-size:15px;">&#10003;</span>'
+                : '<span style="color:rgba(30,45,64,0.3);font-size:15px;">&mdash;</span>';
+              return `
               <tr>
                 <td style="font-weight:700;">${esc(u.name)}</td>
                 <td>${u.total}</td>
@@ -1028,10 +1082,14 @@
                 <td><span class="badge badge-yellow">${u.inactive}</span></td>
                 <td>${u.clicks || 0}</td>
                 <td>${u.notifications}</td>
+                <td style="text-align:center;">${week}</td>
+                <td style="text-align:center;">${month}</td>
               </tr>
-            `).join("")}
+              `;
+            }).join("")}
           </tbody>
         </table>
+        </div>
       `;
     }
 
