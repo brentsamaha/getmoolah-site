@@ -1128,6 +1128,7 @@
               <th>Title</th>
               <th>Store</th>
               <th>Why</th>
+              <th>Next Scrape</th>
               <th>Link</th>
             </tr>
           </thead>
@@ -1137,11 +1138,28 @@
                 const isRed = r.startsWith("No price") || r.startsWith("No title") || r.startsWith("404") || r.startsWith("Bad title");
                 return `<span class="badge ${isRed ? 'badge-red' : 'badge-yellow'}">${esc(r)}</span>`;
               });
+              let nextScrapeCell = '—';
+              if (i.nextCheckAt) {
+                const next = new Date(i.nextCheckAt);
+                const now = new Date();
+                const diffMs = next - now;
+                if (diffMs < 0) {
+                  nextScrapeCell = '<span style="color:#e8614d;font-weight:700;">Overdue</span>';
+                } else {
+                  const diffMins = Math.round(diffMs / 60000);
+                  const diffHrs = Math.floor(diffMins / 60);
+                  const remMins = diffMins % 60;
+                  nextScrapeCell = diffHrs > 0
+                    ? `${diffHrs}h ${remMins}m`
+                    : `${diffMins}m`;
+                }
+              }
               return `
                 <tr>
                   <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(i.title)}</td>
                   <td>${esc(i.store || "Unknown")}</td>
                   <td>${reasons.join(" ")}</td>
+                  <td style="white-space:nowrap;color:rgba(30,45,64,0.5);font-size:13px;">${nextScrapeCell}</td>
                   <td>${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">View</a>` : "—"}</td>
                 </tr>
               `;
