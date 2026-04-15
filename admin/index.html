@@ -1127,23 +1127,21 @@
             <tr>
               <th>Title</th>
               <th>Store</th>
-              <th>Failures</th>
-              <th>Issues</th>
+              <th>Why</th>
               <th>Link</th>
             </tr>
           </thead>
           <tbody>
             ${items.map(i => {
-              const issues = [];
-              if (i.failures > 0) issues.push(`<span class="badge badge-red">${i.failures} failures</span>`);
-              if (i.missingImage) issues.push('<span class="badge badge-yellow">No image</span>');
-              if (i.missingTitle) issues.push('<span class="badge badge-yellow">No title</span>');
+              const reasons = (i.reasons || []).map(r => {
+                const isRed = r.startsWith("No price") || r.startsWith("No title") || r.startsWith("404") || r.startsWith("Bad title");
+                return `<span class="badge ${isRed ? 'badge-red' : 'badge-yellow'}">${esc(r)}</span>`;
+              });
               return `
                 <tr>
                   <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(i.title)}</td>
                   <td>${esc(i.store || "Unknown")}</td>
-                  <td>${i.failures}</td>
-                  <td>${issues.join(" ")}</td>
+                  <td>${reasons.join(" ")}</td>
                   <td>${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">View</a>` : "—"}</td>
                 </tr>
               `;
